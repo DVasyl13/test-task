@@ -1,0 +1,140 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        .profile-page {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-content: center;
+        }
+
+        .profile-page__container {
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            max-width: 200px;
+            justify-content: center;
+            align-content: center;
+        }
+
+    </style>
+</head>
+<body>
+<div class="profile-page">
+    <div class="profile-page__container">
+        <label for="name">Name: </label>
+        <input type="text" id="name">
+        <label for="email">Email: </label>
+        <input type="email" id="email">
+        <label for="password">Password: </label>
+        <input type="password" id="password">
+        <button id="btn">Submit changes</button>
+        <button id="logOutBtn">Log Out</button>
+
+    </div>
+</div>
+<script>
+
+    let name;
+    let email;
+
+    window.onload = function () {
+        const jwt = sessionStorage.getItem("jwt");
+        console.log(jwt);
+        if (jwt == null) {
+            window.location.replace("http://localhost:8080/main");
+        }
+        getUserInfo(jwt);
+    }
+
+    const getUserInfo = (jwt) => {
+        fetch("/api/v1/user", {
+            method: "GET",
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + jwt
+            }
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        }).then(data => {
+            console.log(data);
+            document.getElementById("name").value = data.name;
+            document.getElementById("email").value = data.email;
+            name = data.name;
+            email = data.email;
+        });
+
+    }
+
+    document.getElementById("logOutBtn").addEventListener("click", () => {
+        sessionStorage.removeItem("jwt");
+        location.reload();
+    });
+
+    document.getElementById("btn").addEventListener("click", () => {
+        const nameInput = document.getElementById("name");
+        const emailInput = document.getElementById("email");
+        const passwordInput = document.getElementById("password");
+
+        if (
+            nameInput.value.trim() !== name ||
+            emailInput.value.trim() !== email ||
+            passwordInput.value.trim() !== ''
+        ) {
+            if (nameInput.value.trim() === "") {
+                alert("Please enter a valid name.");
+                return;
+            }
+
+            const mailFormat = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+
+            if(!mailFormat.test(emailInput.value.trim()) ) {
+                alert("Please enter a valid email.");
+                return;
+            }
+
+            const jwt = sessionStorage.getItem("jwt");
+
+            fetch("/api/v1/user", {
+                method: "PUT",
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + jwt
+                },
+                body: JSON.stringify({
+                    name: nameInput.value.trim(),
+                    email: emailInput.value.trim(),
+                    password: passwordInput.value.trim()
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            }).then(data => {
+                console.log(data);
+                document.getElementById("name").value = data.name;
+                document.getElementById("email").value = data.email;
+                alert("Changes saved successfully!");
+            }).catch(error => {
+                console.error(error);
+                alert("An error occurred. Please try again later.");
+            });
+        } else {
+            alert("No changes detected.");
+        }
+    });
+
+</script>
+</body>
+</html>
